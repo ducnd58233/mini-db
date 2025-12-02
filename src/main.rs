@@ -53,8 +53,8 @@ impl<K: Ord + Clone + Debug + Default, V: Clone + Debug + Default> InternalNode<
         let pos = self.find_key_pos(&key);
 
         for i in (pos..self.len).rev() {
-            self.keys[i + 1] = std::mem::replace(&mut self.keys[i], Default::default());
-            self.children[i + 1] = std::mem::replace(&mut self.children[i], None);
+            self.keys[i + 1] = std::mem::take(&mut self.keys[i]);
+            self.children[i + 1] = self.children[i].take();
         }
 
         self.keys[pos] = key;
@@ -66,18 +66,17 @@ impl<K: Ord + Clone + Debug + Default, V: Clone + Debug + Default> InternalNode<
 
     fn split(&mut self) -> (K, Box<Node<K, V>>) {
         let split_point = self.len / 2;
-
         let key_to_promote = self.keys[split_point].clone();
+        let right_len = self.len - split_point;
 
         let mut right_keys: [K; INTERNAL_NODE_MAX_KEYS] =
             core::array::from_fn(|_| Default::default());
         let mut right_children: [Option<Box<Node<K, V>>>; INTERNAL_NODE_MAX_KEYS] =
             core::array::from_fn(|_| None);
-        let right_len = self.len - split_point;
 
         for i in 0..right_len {
-            right_keys[i] = std::mem::replace(&mut self.keys[split_point + i], Default::default());
-            right_children[i] = std::mem::replace(&mut self.children[split_point + i], None);
+            right_keys[i] = std::mem::take(&mut self.keys[split_point + i]);
+            right_children[i] = self.children[split_point + i].take();
         }
 
         self.len = split_point;
@@ -97,7 +96,7 @@ struct LeafNode<K, V> {
     len: usize,
     keys: [K; INTERNAL_NODE_MAX_KEYS],
     values: [V; INTERNAL_NODE_MAX_KEYS],
-    next: Option<Box<Node<K, V>>>,
+    next: Option<Box<LeafNode<K, V>>>,
 }
 
 impl<K: Ord + Clone + Debug + Default, V: Clone + Debug + Default> LeafNode<K, V> {
@@ -129,8 +128,8 @@ impl<K: Ord + Clone + Debug + Default, V: Clone + Debug + Default> LeafNode<K, V
         let pos = self.find_key_pos(&key);
 
         for i in (pos..self.len).rev() {
-            self.keys[i + 1] = std::mem::replace(&mut self.keys[i], Default::default());
-            self.values[i + 1] = std::mem::replace(&mut self.values[i], Default::default());
+            self.keys[i + 1] = std::mem::take(&mut self.keys[i]);
+            self.values[i + 1] = std::mem::take(&mut self.values[i]);
         }
 
         self.keys[pos] = key;
@@ -143,16 +142,16 @@ impl<K: Ord + Clone + Debug + Default, V: Clone + Debug + Default> LeafNode<K, V
     fn split(&mut self) -> (K, Box<Node<K, V>>) {
         let split_point = self.len / 2;
         let key_to_promote = self.keys[split_point].clone();
+        let right_len = self.len - split_point;
 
         let mut right_keys: [K; INTERNAL_NODE_MAX_KEYS] =
             core::array::from_fn(|_| Default::default());
         let mut right_values: [V; INTERNAL_NODE_MAX_KEYS] =
             core::array::from_fn(|_| Default::default());
-        let right_len = self.len - split_point;
 
         for i in 0..right_len {
-            right_keys[i] = std::mem::replace(&mut self.keys[split_point + i], Default::default());
-            right_values[i] = std::mem::replace(&mut self.values[split_point + i], Default::default());
+            right_keys[i] = std::mem::take(&mut self.keys[split_point + i]);
+            right_values[i] = std::mem::take(&mut self.values[split_point + i]);
         }
 
         self.len = split_point;
@@ -164,10 +163,7 @@ impl<K: Ord + Clone + Debug + Default, V: Clone + Debug + Default> LeafNode<K, V
             len: right_len,
         }));
 
-        let right_leaf_clone = right_leaf.clone();
-        self.next = Some(right_leaf);
-
-        (key_to_promote, right_leaf_clone)
+        (key_to_promote, right_leaf)
     }
 }
 
@@ -219,12 +215,12 @@ impl<K: Ord + Clone + Debug + Default, V: Clone + Debug + Default> BPTree<K, V> 
                 let needs_split = leaf.insert(key, value);
 
                 if needs_split {
-                    let (promoted_key, right_leaf) = leaf.split();
+                    let (promoted_key, right_node) = leaf.split();
                     return InsertResult {
                         left_node: Box::new(Node::Leaf(leaf)),
                         split_info: Some(SplitInfo {
                             promoted_key,
-                            right_node: right_leaf,
+                            right_node,
                         }),
                     };
                 }
@@ -261,6 +257,7 @@ impl<K: Ord + Clone + Debug + Default, V: Clone + Debug + Default> BPTree<K, V> 
             }
         }
     }
+
 
     fn print_tree(&self) {
         if let Some(ref root) = self.root {
@@ -328,4 +325,5 @@ mod tests {
             }
         }
     }
+
 }
