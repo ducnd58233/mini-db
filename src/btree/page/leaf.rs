@@ -3,12 +3,9 @@ use std::{
     io::{Read, Write},
 };
 
+use super::header::{PageHeader, PageType};
+use crate::error::{DbError, Result};
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
-
-use crate::{
-    btree::header::{PageHeader, PageType},
-    error::{DbError, Result},
-};
 
 pub const MAX_KEY_SIZE: usize = 12;
 pub const MAX_VAL_SIZE: usize = 12;
@@ -181,6 +178,16 @@ impl BTreeLeafPage {
             }
         }
         false
+    }
+
+    pub fn del_key(&mut self, key: &[u8]) -> bool {
+        if let Some(pos) = self.find_exact(key) {
+            self.kv.remove(pos);
+            self.nkv -= 1;
+            true
+        } else {
+            false
+        }
     }
 
     /// Split node into two equal parts

@@ -3,12 +3,9 @@ use std::{
     io::{Read, Write},
 };
 
+use super::header::{PageHeader, PageType};
+use crate::error::{DbError, Result};
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
-
-use crate::{
-    btree::header::{PageHeader, PageType},
-    error::{DbError, Result},
-};
 
 pub const MAX_KEY_SIZE: usize = 12;
 pub const INTERNAL_MAX_KEY: usize = 64;
