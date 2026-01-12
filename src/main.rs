@@ -1,6 +1,9 @@
 use std::cmp::Ordering;
 use std::fmt::Debug;
 
+mod btree;
+mod error;
+
 const INTERNAL_NODE_MAX_KEYS: usize = 8;
 
 #[derive(Debug, Clone)]
@@ -188,9 +191,16 @@ impl<K: Ord + Clone + Debug + Default, V: Clone + Debug + Default> BPTree<K, V> 
 
     fn insert(&mut self, key: K, value: V) {
         let root = self.root.take().unwrap();
-        let InsertResult { left_node: new_root, split_info } = self.insert_recursive(root, key, value);
+        let InsertResult {
+            left_node: new_root,
+            split_info,
+        } = self.insert_recursive(root, key, value);
 
-        if let Some(SplitInfo { promoted_key, right_node }) = split_info {
+        if let Some(SplitInfo {
+            promoted_key,
+            right_node,
+        }) = split_info
+        {
             let mut internal = InternalNode::new();
             let left_min_key = Self::get_promoted_key(&new_root);
             internal.keys[0] = left_min_key;
@@ -204,12 +214,7 @@ impl<K: Ord + Clone + Debug + Default, V: Clone + Debug + Default> BPTree<K, V> 
         }
     }
 
-    fn insert_recursive(
-        &mut self,
-        node: Box<Node<K, V>>,
-        key: K,
-        value: V,
-    ) -> InsertResult<K, V> {
+    fn insert_recursive(&mut self, node: Box<Node<K, V>>, key: K, value: V) -> InsertResult<K, V> {
         match *node {
             Node::Leaf(mut leaf) => {
                 let needs_split = leaf.insert(key, value);
@@ -230,13 +235,22 @@ impl<K: Ord + Clone + Debug + Default, V: Clone + Debug + Default> BPTree<K, V> 
                 }
             }
             Node::Internal(mut internal) => {
-                let child_idx = internal.find_key_pos(&key).min(internal.len.saturating_sub(1));
+                let child_idx = internal
+                    .find_key_pos(&key)
+                    .min(internal.len.saturating_sub(1));
                 let child = internal.children[child_idx].take().unwrap();
 
-                let InsertResult { left_node: updated_child, split_info } = self.insert_recursive(child, key, value);
+                let InsertResult {
+                    left_node: updated_child,
+                    split_info,
+                } = self.insert_recursive(child, key, value);
                 internal.children[child_idx] = Some(updated_child);
 
-                if let Some(SplitInfo { promoted_key, right_node }) = split_info {
+                if let Some(SplitInfo {
+                    promoted_key,
+                    right_node,
+                }) = split_info
+                {
                     let needs_split = internal.insert(promoted_key, right_node);
                     if needs_split {
                         let (promoted_key, right_internal) = internal.split();
@@ -258,7 +272,6 @@ impl<K: Ord + Clone + Debug + Default, V: Clone + Debug + Default> BPTree<K, V> 
         }
     }
 
-
     fn print_tree(&self) {
         if let Some(ref root) = self.root {
             self.print_node(root, 0);
@@ -266,15 +279,15 @@ impl<K: Ord + Clone + Debug + Default, V: Clone + Debug + Default> BPTree<K, V> 
             println!("(empty tree)");
         }
     }
-    
+
     fn print_node(&self, node: &Node<K, V>, depth: usize) {
         let indent = "  ".repeat(depth);
-        
+
         match node {
             Node::Internal(internal) => {
                 let keys: Vec<_> = internal.keys[..internal.len].iter().collect();
                 println!("{}Internal: keys={:?}", indent, keys);
-                
+
                 for i in 0..internal.len {
                     if let Some(ref child) = internal.children[i] {
                         self.print_node(child, depth + 1);
@@ -325,5 +338,4 @@ mod tests {
             }
         }
     }
-
 }
