@@ -3,6 +3,7 @@ use std::fmt::Debug;
 
 mod btree;
 mod error;
+mod storage;
 
 const INTERNAL_NODE_MAX_KEYS: usize = 8;
 
