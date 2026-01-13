@@ -101,7 +101,7 @@ impl BTreeIterator {
 
             match &last.node {
                 PageNode::Internal(ipage) => {
-                    if last.position >= ipage.nkey as usize - 1 {
+                    if ipage.nkey == 0 || last.position >= ipage.nkey as usize - 1 {
                         // Need to go up
                         self.path.pop();
                         continue;
@@ -111,7 +111,7 @@ impl BTreeIterator {
                     }
                 }
                 PageNode::Leaf(lpage) => {
-                    if last.position >= lpage.nkv as usize - 1 {
+                    if lpage.nkv == 0 || last.position >= lpage.nkv as usize - 1 {
                         // Need to go up
                         self.path.pop();
                         continue;

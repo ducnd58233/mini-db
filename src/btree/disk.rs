@@ -92,11 +92,18 @@ impl BPTreeDisk {
     }
 
     fn write_block_at_pointer(&mut self, pointer: u64, data: &[u8]) -> Result<()> {
+        if data.len() > PAGE_SIZE {
+            return Err(DbError::InvalidFormat(format!(
+                "Data size {} exceeds page size {}",
+                data.len(),
+                PAGE_SIZE,
+            )));
+        }
         let offset = pointer * PAGE_SIZE as u64;
         self.file.seek(SeekFrom::Start(offset))?;
 
         let mut buffer = vec![0u8; PAGE_SIZE];
-        buffer[..data.len().min(PAGE_SIZE)].copy_from_slice(&data[..data.len().min(PAGE_SIZE)]);
+        buffer[..data.len()].copy_from_slice(data);
 
         self.file.write_all(&buffer)?;
         self.file.sync_all()?;

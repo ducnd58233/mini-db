@@ -30,7 +30,7 @@ impl KeyVal {
         }
 
         let mut key_data = [0u8; MAX_KEY_SIZE];
-        let mut val_data = [0u8; MAX_KEY_SIZE];
+        let mut val_data = [0u8; MAX_VAL_SIZE];
 
         let key_len = key.len();
         let val_len = val.len();
