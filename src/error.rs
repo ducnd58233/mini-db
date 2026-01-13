@@ -24,6 +24,15 @@ pub enum DbError {
 
     #[error("Invalid data format: {0}")]
     InvalidFormat(String),
+
+    #[error("Table not found: {0}")]
+    TableNotFound(String),
+
+    #[error("Duplicate primary key")]
+    DuplicatePrimaryKey,
+
+    #[error("Invalid record: {0}")]
+    InvalidRecord(String),
 }
 
 pub type Result<T> = std::result::Result<T, DbError>;

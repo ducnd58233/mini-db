@@ -157,7 +157,7 @@ impl BPTreeDisk {
         match node {
             PageNode::Internal(ipage) => {
                 let key_entry = KeyEntry::new(key)?;
-                let pos = ipage.find_last_le(&key_entry).unwrap();
+                let pos = ipage.find_last_le(&key_entry).unwrap_or(0);
 
                 if pos < ipage.children.len() {
                     self.find_recursive(ipage.children[pos], key)
